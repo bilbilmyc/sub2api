@@ -65,7 +65,7 @@ gateway:
 
 ## 本地复现
 
-使用独立的 `sub2-route-lab` Compose 项目和新数据卷。网络是 `internal: true`，不映射宿主端口，不挂载生产配置，也不导入真实账号。测试器从 Docker 获取该项目的私有容器地址；模拟上游不会连接任何外部服务。
+使用独立的 `sub2-route-lab` Compose 项目和新数据卷。网络是 `internal: true`，不映射宿主端口，不挂载生产配置，也不导入真实账号。测试器在 Linux Docker 宿主机运行，从 Docker 获取该项目的私有容器地址；模拟上游不会连接任何外部服务。
 
 在仓库根目录构建：
 
