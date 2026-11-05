@@ -176,6 +176,9 @@ func (s *OpsSystemLogSink) shouldIndex(event *logger.LogEvent) bool {
 			component = fc
 		}
 	}
+	if component == "route.outbound" {
+		return level == "info" && isOutboundEvidenceMetadata(event)
+	}
 	if strings.Contains(component, "http.access") {
 		return s.persistAccessLogs.Load()
 	}
