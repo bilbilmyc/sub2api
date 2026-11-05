@@ -30,6 +30,8 @@ Thumbs.db
 # Build artifacts
 dist/
 build/
+artifacts/
+__pycache__/
 
 # Node modules (will be installed in container)
 frontend/node_modules/

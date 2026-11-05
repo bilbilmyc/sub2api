@@ -1,0 +1,73 @@
+# Isolated local verification only. Synthetic credentials; no production mounts.
+name: sub2-route-lab
+services:
+  postgres:
+    image: ${LAB_POSTGRES_IMAGE:-postgres:18-alpine}
+    environment:
+      POSTGRES_USER: route_lab
+      POSTGRES_PASSWORD: synthetic-route-lab-password
+      POSTGRES_DB: route_lab
+    volumes:
+      - postgres:/var/lib/postgresql
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U route_lab -d route_lab']
+      interval: 2s
+      timeout: 2s
+      retries: 30
+  redis:
+    image: redis:8-alpine
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+  mock:
+    image: ${LAB_IMAGE:-sub2api-route-test:0.2.19-r1}
+    entrypoint: [/route-mock]
+    command: []
+    volumes:
+      - ../artifacts/route-mock:/route-mock:ro
+  app:
+    image: ${LAB_IMAGE:-sub2api-route-test:0.2.19-r1}
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      mock: {condition: service_started}
+    volumes:
+      - app:/app/data
+    environment:
+      AUTO_SETUP: 'true'
+      SERVER_HOST: 0.0.0.0
+      SERVER_PORT: '8080'
+      SERVER_MODE: release
+      RUN_MODE: standard
+      DATABASE_HOST: postgres
+      DATABASE_PORT: '5432'
+      DATABASE_USER: route_lab
+      DATABASE_PASSWORD: synthetic-route-lab-password
+      DATABASE_DBNAME: route_lab
+      DATABASE_SSLMODE: disable
+      REDIS_HOST: redis
+      REDIS_PORT: '6379'
+      ADMIN_EMAIL: admin@route-lab.invalid
+      ADMIN_PASSWORD: Synthetic-Route-Lab-Password-2026!
+      JWT_SECRET: synthetic-route-lab-jwt-key-never-production-2026
+      TOTP_ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      SECURITY_URL_ALLOWLIST_ENABLED: 'false'
+      SECURITY_URL_ALLOWLIST_ALLOW_PRIVATE_HOSTS: 'true'
+      SECURITY_URL_ALLOWLIST_ALLOW_INSECURE_HTTP: 'true'
+      GATEWAY_OUTBOUND_EVIDENCE_ENABLED: ${ROUTE_EVIDENCE_ENABLED:-false}
+      GATEWAY_OUTBOUND_EVIDENCE_ACCOUNT_IDS: ${ROUTE_EVIDENCE_ACCOUNT_IDS:-}
+      TZ: UTC
+    healthcheck:
+      test: [CMD, wget, -q, -T, '5', -O, /dev/null, 'http://127.0.0.1:8080/health']
+      interval: 3s
+      timeout: 5s
+      retries: 40
+      start_period: 15s
+networks:
+  default:
+    internal: true
+volumes:
+  postgres:
+  app:

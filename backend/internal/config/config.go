@@ -979,6 +979,10 @@ const (
 
 // GatewayConfig API网关相关配置
 type GatewayConfig struct {
+	// OutboundEvidenceEnabled opts HTTP attempts into the metadata-only Ops sink.
+	// An empty account list covers all accounts; unset/false keeps the original path.
+	OutboundEvidenceEnabled    bool    `mapstructure:"outbound_evidence_enabled"`
+	OutboundEvidenceAccountIDs []int64 `mapstructure:"outbound_evidence_account_ids"`
 	// MinOutputTokens is the minimum max_output_tokens used when
 	// converting Chat Completions or Anthropic requests to Responses.
 	MinOutputTokens int `mapstructure:"min_output_tokens"`
@@ -2426,6 +2430,8 @@ func setDefaults() {
 
 	// Gateway
 	viper.SetDefault("gateway.response_header_timeout", 600) // 600秒(10分钟)等待上游响应头，LLM高负载时可能排队较久
+	viper.SetDefault("gateway.outbound_evidence_enabled", false)
+	viper.SetDefault("gateway.outbound_evidence_account_ids", []int64{})
 	viper.SetDefault("gateway.openai_response_header_timeout", 0)
 	viper.SetDefault("gateway.grok_response_header_timeout", 120)
 	viper.SetDefault("gateway.openai_first_output_timeout_seconds", 0)
@@ -2714,6 +2720,11 @@ func setEnvReachableDefaults() {
 }
 
 func (c *Config) Validate() error {
+	for _, id := range c.Gateway.OutboundEvidenceAccountIDs {
+		if id <= 0 {
+			return fmt.Errorf("gateway.outbound_evidence_account_ids must contain positive account IDs")
+		}
+	}
 	if c.Gateway.MinOutputTokens < 16 {
 		return fmt.Errorf("gateway.min_output_tokens must be at least 16")
 	}
